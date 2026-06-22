@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0b0e14"/>
+  <rect x="40" y="40" width="432" height="432" rx="84" fill="#11151c" stroke="#2a313c" stroke-width="4"/>
+  <!-- 终端提示符 >_ ，Claude 橙色 -->
+  <g fill="none" stroke="#d97757" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="150,176 232,256 150,336"/>
+    <line x1="280" y1="344" x2="372" y2="344"/>
+  </g>
+</svg>

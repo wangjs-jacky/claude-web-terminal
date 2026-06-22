@@ -87,6 +87,52 @@
 
   connect();
 
+  // ---------- 触屏滚动（手动把上下滑动映射为终端缓冲滚动）----------
+  // 背景：移动端 xterm 的视口不响应触摸，且页面级滑动会触发浏览器下拉刷新（loading）。
+  // 这里在 #terminal 上接管触摸：滑动 → term.scrollLines，轻点 → 唤起键盘。
+  (function attachTouchScroll() {
+    const el = $('#terminal');
+    let lastY = 0;
+    let startY = 0;
+    let acc = 0;
+    let rowH = 18;
+    let moved = false;
+
+    el.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length !== 1) return;
+        startY = lastY = e.touches[0].clientY;
+        acc = 0;
+        moved = false;
+        rowH = Math.max(8, el.clientHeight / Math.max(1, term.rows));
+      },
+      { passive: false },
+    );
+
+    el.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches.length !== 1) return;
+        const y = e.touches[0].clientY;
+        acc += lastY - y; // 手指上滑(y 变小) → 正值 → 向下(更新内容)滚动
+        lastY = y;
+        if (Math.abs(y - startY) > 6) moved = true;
+        const lines = Math.trunc(acc / rowH);
+        if (lines !== 0) {
+          term.scrollLines(lines);
+          acc -= lines * rowH;
+        }
+        e.preventDefault(); // 阻止浏览器下拉刷新
+      },
+      { passive: false },
+    );
+
+    el.addEventListener('touchend', () => {
+      if (!moved) term.focus(); // 轻点唤起软键盘
+    });
+  })();
+
   // ---------- 尺寸自适应 ----------
   function doFit() {
     try {
@@ -211,4 +257,11 @@
       setStatus('图片上传失败：' + e, 'err');
     }
   });
+
+  // ---------- 注册 Service Worker（PWA 可安装 + 离线兜底）----------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
 })();
