@@ -68,6 +68,37 @@ claude-web-terminal listening on http://0.0.0.0:7681
 
 搞定 —— 你的 Claude Code 就投射到手机上了。
 
+## 安装为 App（PWA，需 HTTPS）
+
+浏览器规定 **Service Worker / PWA 安装必须运行在 HTTPS 安全上下文**，纯 `http://100.x.x.x` 无法安装（但终端功能、触屏滚动都正常）。用 `tailscale serve` 给它套一层可信 HTTPS 证书即可：
+
+```bash
+# 用一个独立端口（如 8443）暴露 HTTPS，避免和 443 上已有的服务冲突
+# 直接代理到本机 Tailscale IP（tailscale ip -4 查），而非 127.0.0.1
+tailscale serve --bg --https=8443 http://$(tailscale ip -4 | head -1):7681
+
+# 查看： tailscale serve status
+# 关闭： tailscale serve --https=8443 off
+```
+
+随后手机浏览器打开 HTTPS 地址（形如）：
+
+```
+https://<主机名>.<tailnet>.ts.net:8443
+```
+
+打开后用浏览器菜单「添加到主屏幕 / 安装应用」，即可像原生 App 一样全屏启动。
+
+> 为什么代理到 Tailscale IP 而非 `127.0.0.1`：服务默认监听 `0.0.0.0`，代理到真实网卡 IP 可避开本机其他占用 loopback 的进程。
+
+## 移动端手势
+
+| 手势 | 效果 |
+|------|------|
+| **上下滑动终端区** | 滚动查看历史输出（已禁用浏览器下拉刷新） |
+| **轻点终端区** | 唤起软键盘 |
+| **工具条按钮** | 见下表 |
+
 ## 工具条说明
 
 | 按钮 | 作用 |
