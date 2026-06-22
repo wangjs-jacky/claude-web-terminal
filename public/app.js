@@ -54,6 +54,23 @@
     }
   }
 
+  // 发送 SGR 鼠标滚轮序列（tmux mouse on 接管）。
+  // notches>0 向下滚（看更新内容），<0 向上滚（看历史）。x/y 缺省用终端中心。
+  function sendWheel(notches, x, y) {
+    const el = $('#terminal');
+    const rect = el.getBoundingClientRect();
+    const cx = x == null ? rect.left + rect.width / 2 : x;
+    const cy = y == null ? rect.top + rect.height / 2 : y;
+    const cellW = Math.max(1, rect.width / Math.max(1, term.cols));
+    const cellH = Math.max(1, rect.height / Math.max(1, term.rows));
+    const col = Math.min(term.cols, Math.max(1, Math.round((cx - rect.left) / cellW)));
+    const row = Math.min(term.rows, Math.max(1, Math.round((cy - rect.top) / cellH)));
+    const btn = notches > 0 ? 65 : 64;
+    const seq = `\x1b[<${btn};${col};${row}M`;
+    const n = Math.abs(notches);
+    for (let i = 0; i < n; i++) sendInput(seq);
+  }
+
   function connect() {
     setStatus('连接中…');
     ws = new WebSocket(wsUrl());
@@ -87,25 +104,28 @@
 
   connect();
 
-  // ---------- 触屏滚动（手动把上下滑动映射为终端缓冲滚动）----------
-  // 背景：移动端 xterm 的视口不响应触摸，且页面级滑动会触发浏览器下拉刷新（loading）。
-  // 这里在 #terminal 上接管触摸：滑动 → term.scrollLines，轻点 → 唤起键盘。
+  // ---------- 触屏滚动 ----------
+  // Claude Code 等全屏 TUI 使用 alt-screen，xterm 自身没有滚动历史，term.scrollLines 无效。
+  // 解法：把触摸滑动转成「鼠标滚轮」转义序列发给后端；服务端已对 tmux 开启 mouse 模式，
+  // tmux 会接管滚轮并滚动（alt-screen 时透传给内部应用，由应用自行滚动）。
+  // 轻点 → 唤起软键盘。
   (function attachTouchScroll() {
     const el = $('#terminal');
+    const WHEEL_STEP = 22; // 每滑动多少像素触发一次滚轮
     let lastY = 0;
     let startY = 0;
     let acc = 0;
-    let rowH = 18;
     let moved = false;
+    let lastX = 0;
 
     el.addEventListener(
       'touchstart',
       (e) => {
         if (e.touches.length !== 1) return;
         startY = lastY = e.touches[0].clientY;
+        lastX = e.touches[0].clientX;
         acc = 0;
         moved = false;
-        rowH = Math.max(8, el.clientHeight / Math.max(1, term.rows));
       },
       { passive: false },
     );
@@ -115,13 +135,14 @@
       (e) => {
         if (e.touches.length !== 1) return;
         const y = e.touches[0].clientY;
-        acc += lastY - y; // 手指上滑(y 变小) → 正值 → 向下(更新内容)滚动
+        lastX = e.touches[0].clientX;
+        acc += lastY - y; // 手指上滑(y 变小) → 正值
         lastY = y;
         if (Math.abs(y - startY) > 6) moved = true;
-        const lines = Math.trunc(acc / rowH);
-        if (lines !== 0) {
-          term.scrollLines(lines);
-          acc -= lines * rowH;
+        const notches = Math.trunc(acc / WHEEL_STEP);
+        if (notches !== 0) {
+          sendWheel(notches, lastX, y);
+          acc -= notches * WHEEL_STEP;
         }
         e.preventDefault(); // 阻止浏览器下拉刷新
       },
@@ -203,9 +224,10 @@
       sendInput('\x03');
       setTimeout(() => sendInput('\x03'), 60);
     },
-    'page-up': () => term.scrollPages(-1),
-    'page-down': () => term.scrollPages(1),
-    'to-bottom': () => term.scrollToBottom(),
+    'page-up': () => sendWheel(-5),
+    'page-down': () => sendWheel(5),
+    'to-bottom': () => sendWheel(40), // 连续下滚到底
+
     image: () => $('#fileInput').click(),
   };
   document.querySelectorAll('[data-act]').forEach((btn) => {

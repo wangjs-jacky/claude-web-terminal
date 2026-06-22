@@ -78,9 +78,14 @@ function ensureSession() {
       )}`,
       { stdio: 'ignore', env: BASE_ENV },
     );
-    // 关闭 tmux 状态栏，给终端腾出一整行（移动端寸土寸金）
+  }
+  // 每次都确保这些选项（幂等）：
+  //   status off  —— 关掉状态栏，移动端腾出一行
+  //   mouse on    —— 让 tmux 接管鼠标滚轮，前端把触摸滑动转成滚轮即可滚动，
+  //                  即使内部应用（如 claude）处于 alt-screen 也能滚
+  for (const opt of ['status off', 'mouse on']) {
     try {
-      execSync(`tmux set-option -t ${SESSION} status off`, { env: BASE_ENV });
+      execSync(`tmux set-option -t ${SESSION} ${opt}`, { env: BASE_ENV });
     } catch {}
   }
 }
