@@ -26,16 +26,15 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  /* 适配刘海屏 */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0
     env(safe-area-inset-left);
 }
 
-/* 终端区占据剩余空间 */
+/* 终端区占据剩余空间（优先级最高，不会被工具条挤没） */
 #terminal {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 6px 6px 0 6px;
+  padding: 4px 4px 0 6px;
   overflow: hidden;
 }
 
@@ -46,8 +45,9 @@ body {
 /* 连接状态条 */
 .status {
   flex: 0 0 auto;
-  font-size: 12px;
-  padding: 2px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 1px 10px;
   color: var(--muted);
   background: var(--panel);
   border-top: 1px solid var(--border);
@@ -59,20 +59,20 @@ body {
   color: #ff6b6b;
 }
 
-/* 工具条 */
+/* 工具条：整体紧凑，给终端让出空间 */
 .toolbar {
   flex: 0 0 auto;
   background: var(--panel);
   border-top: 1px solid var(--border);
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) 8px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom)) 6px;
   user-select: none;
 }
 
 .input-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 #textInput {
@@ -82,12 +82,15 @@ body {
   background: var(--panel-2);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 17px;
-  line-height: 1.3;
-  max-height: 96px;
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 15px;
+  line-height: 1.35;
+  height: 40px;
+  max-height: 88px;
   overflow-y: auto;
+  white-space: nowrap;       /* 占位文字不换行，避免被截断 */
+  text-overflow: ellipsis;
 }
 #textInput::placeholder {
   color: var(--muted);
@@ -102,14 +105,14 @@ button {
 }
 button:active {
   filter: brightness(1.35);
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .big {
   flex: 0 0 auto;
-  min-width: 64px;
-  border-radius: 12px;
-  font-size: 18px;
+  min-width: 52px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 600;
 }
 .blue {
@@ -123,14 +126,14 @@ button:active {
   width: 100%;
   background: transparent;
   color: #5b9dff;
-  font-size: 14px;
-  padding: 4px 0 8px;
+  font-size: 12px;
+  padding: 2px 0 6px;
 }
 
 .grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .grid.hidden {
   display: none;
@@ -138,7 +141,7 @@ button:active {
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .key {
@@ -146,11 +149,13 @@ button:active {
   min-width: 0;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 4px;
-  font-size: 16px;
-  font-weight: 600;
+  border-radius: 10px;
+  padding: 9px 3px;
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .key.purple {
   background: #6c3fd6;
