@@ -1,0 +1,30 @@
+{
+  "name": "claude-web-terminal",
+  "version": "1.0.0",
+  "description": "把 Mac mini 上的 Claude Code 通过 node-pty + xterm.js 投射到手机浏览器，经 Tailscale 私网访问，tmux 持久化会话。",
+  "type": "module",
+  "bin": {
+    "claude-web-terminal": "./server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "node scripts/fix-node-pty.js"
+  },
+  "keywords": [
+    "claude-code",
+    "xterm",
+    "node-pty",
+    "tmux",
+    "web-terminal",
+    "tailscale"
+  ],
+  "author": "wangjs-jacky",
+  "license": "MIT",
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "express": "^4.21.2",
+    "node-pty": "^1.0.0",
+    "ws": "^8.18.0"
+  }
+}

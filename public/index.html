@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>Claude Code · Web Terminal</title>
+    <link rel="stylesheet" href="/vendor/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <!-- 终端渲染区 -->
+    <div id="terminal"></div>
+
+    <!-- 连接状态条 -->
+    <div id="status" class="status">连接中…</div>
+
+    <!-- 移动端工具条 -->
+    <div id="toolbar" class="toolbar">
+      <!-- 文本输入：发送=不回车，↵=回车提交 -->
+      <div class="input-row">
+        <textarea
+          id="textInput"
+          rows="1"
+          placeholder="输入 → 发送=不回车  ↵=回车提交"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        ></textarea>
+        <button id="btnSend" class="big blue">发送</button>
+        <button id="btnSendEnter" class="big green">↵</button>
+      </div>
+
+      <button id="btnCollapse" class="collapse">▼ 收起工具条</button>
+
+      <div id="toolGrid" class="grid">
+        <!-- 第一排：功能键 -->
+        <div class="row">
+          <button data-act="enter-cc" class="key purple">进入CC</button>
+          <button data-act="image" class="key orange">📷 图片</button>
+          <button data-act="clear" class="key">清屏</button>
+          <button data-act="keyboard" class="key">⌨ 键盘</button>
+        </div>
+        <!-- 第二排：控制字符 -->
+        <div class="row">
+          <button data-send="\r" class="key">↵</button>
+          <button data-send="\t" class="key">Tab</button>
+          <button data-send="\x1b" class="key">Esc</button>
+          <button data-send="\x03" class="key">^C</button>
+          <button data-act="ctrlc2" class="key red">^C×2</button>
+        </div>
+        <!-- 第三排：方向 / Home / End -->
+        <div class="row">
+          <button data-send="\x1b[D" class="key">←</button>
+          <button data-send="\x1b[A" class="key">↑</button>
+          <button data-send="\x1b[B" class="key">↓</button>
+          <button data-send="\x1b[C" class="key">→</button>
+          <button data-send="\x1b[H" class="key">Home</button>
+          <button data-send="\x1b[F" class="key">End</button>
+        </div>
+        <!-- 第四排：滚动翻页（本地 xterm 缓冲）-->
+        <div class="row">
+          <button data-act="page-up" class="key teal">↑ 上翻</button>
+          <button data-act="page-down" class="key teal">↓ 下翻</button>
+          <button data-act="to-bottom" class="key teal">⇊ 到底</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 隐藏的文件选择器，供「图片」按钮使用 -->
+    <input id="fileInput" type="file" accept="image/*" hidden />
+
+    <script src="/vendor/xterm/lib/xterm.js"></script>
+    <script src="/vendor/addon-fit/lib/addon-fit.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

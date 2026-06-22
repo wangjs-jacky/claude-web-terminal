@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  macOS 开机自启模板。
+  使用步骤：
+    1. 把下面的 __DIR__ 改成项目绝对路径，__NODE__ 改成 `which node` 的结果
+    2. 复制到 ~/Library/LaunchAgents/com.jacky.claude-web-terminal.plist
+    3. 加载： launchctl load -w ~/Library/LaunchAgents/com.jacky.claude-web-terminal.plist
+    4. 卸载： launchctl unload ~/Library/LaunchAgents/com.jacky.claude-web-terminal.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.jacky.claude-web-terminal</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>__NODE__</string>
+      <string>__DIR__/server.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__DIR__</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PORT</key>
+      <string>7681</string>
+      <!-- 如需 token 校验，取消注释并填写
+      <key>TOKEN</key>
+      <string>your-secret-token</string>
+      -->
+      <key>PATH</key>
+      <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>__DIR__/server.log</string>
+    <key>StandardErrorPath</key>
+    <string>__DIR__/server.err.log</string>
+  </dict>
+</plist>
