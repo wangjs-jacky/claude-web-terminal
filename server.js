@@ -19,6 +19,7 @@ import { WebSocketServer } from 'ws';
 import { spawn as ptySpawn } from 'node-pty';
 import { execSync } from 'node:child_process';
 import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -34,6 +35,11 @@ const CLAUDE_CMD =
   process.env.CLAUDE_CMD || 'claude --dangerously-skip-permissions';
 const TOKEN = process.env.TOKEN || ''; // 可选：非空时要求 URL ?token=xxx 校验
 const SHELL = process.env.SHELL || '/bin/zsh';
+// 可选 HTTPS：用 Tailscale 签发的可信证书直接监听，使 PWA 可安装。
+// 用 `tailscale cert --cert-file certs/cert.crt --key-file certs/cert.key <你的.ts.net域名>` 生成。
+const HTTPS_PORT = Number(process.env.HTTPS_PORT || 0);
+const CERT_FILE = process.env.CERT_FILE || path.join(__dirname, 'certs', 'cert.crt');
+const KEY_FILE = process.env.KEY_FILE || path.join(__dirname, 'certs', 'cert.key');
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR || path.join(os.homedir(), 'claude-web-uploads');
 
@@ -134,12 +140,11 @@ app.post('/upload', (req, res) => {
   }
 });
 
-const server = http.createServer(app);
-
 // ---------- WebSocket ----------
 const wss = new WebSocketServer({ noServer: true });
 
-server.on('upgrade', (req, socket, head) => {
+// upgrade 处理器（HTTP / HTTPS 两个 server 共用）
+function handleUpgrade(req, socket, head) {
   if (TOKEN) {
     const url = new URL(req.url, 'http://localhost');
     if (url.searchParams.get('token') !== TOKEN) {
@@ -149,7 +154,7 @@ server.on('upgrade', (req, socket, head) => {
     }
   }
   wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
-});
+}
 
 wss.on('connection', (ws) => {
   ensureSession();
@@ -195,7 +200,10 @@ wss.on('connection', (ws) => {
   });
 });
 
-server.listen(PORT, HOST, () => {
+// ---------- HTTP 监听 ----------
+const httpServer = http.createServer(app);
+httpServer.on('upgrade', handleUpgrade);
+httpServer.listen(PORT, HOST, () => {
   ensureSession();
   console.log(`claude-web-terminal listening on http://${HOST}:${PORT}`);
   console.log(`  tmux session : ${SESSION}`);
@@ -203,3 +211,21 @@ server.listen(PORT, HOST, () => {
   console.log(`  upload dir   : ${UPLOAD_DIR}`);
   if (TOKEN) console.log('  token        : enabled');
 });
+
+// ---------- HTTPS 监听（可选，用于 PWA 安装）----------
+if (HTTPS_PORT) {
+  if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+    const httpsServer = https.createServer(
+      { cert: fs.readFileSync(CERT_FILE), key: fs.readFileSync(KEY_FILE) },
+      app,
+    );
+    httpsServer.on('upgrade', handleUpgrade);
+    httpsServer.listen(HTTPS_PORT, HOST, () => {
+      console.log(`  https        : https://${HOST}:${HTTPS_PORT} (cert: ${CERT_FILE})`);
+    });
+  } else {
+    console.warn(
+      `  https        : 已设 HTTPS_PORT=${HTTPS_PORT} 但找不到证书 ${CERT_FILE} / ${KEY_FILE}，跳过`,
+    );
+  }
+}

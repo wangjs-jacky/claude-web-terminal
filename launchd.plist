@@ -27,6 +27,10 @@
     <dict>
       <key>PORT</key>
       <string>7681</string>
+      <!-- 如需 PWA(HTTPS)，先用 `tailscale cert` 生成 certs/cert.crt|key，再取消注释
+      <key>HTTPS_PORT</key>
+      <string>8443</string>
+      -->
       <!-- 如需 token 校验，取消注释并填写
       <key>TOKEN</key>
       <string>your-secret-token</string>

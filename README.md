@@ -70,26 +70,36 @@ claude-web-terminal listening on http://0.0.0.0:7681
 
 ## 安装为 App（PWA，需 HTTPS）
 
-浏览器规定 **Service Worker / PWA 安装必须运行在 HTTPS 安全上下文**，纯 `http://100.x.x.x` 无法安装（但终端功能、触屏滚动都正常）。用 `tailscale serve` 给它套一层可信 HTTPS 证书即可：
+浏览器规定 **Service Worker / PWA 安装必须运行在 HTTPS 安全上下文**，纯 `http://100.x.x.x` 无法安装（但终端功能、触屏滚动都正常）。
+
+方案：用 **Tailscale 签发的可信证书**（Let's Encrypt），让本服务**直接**监听一个 HTTPS 端口（如 8443）。比 `tailscale serve` 更可控、可本地验证。
+
+> 前提：Tailscale 管理后台已开启「HTTPS Certificates」+「MagicDNS」（默认多已开）。
 
 ```bash
-# 用一个独立端口（如 8443）暴露 HTTPS，避免和 443 上已有的服务冲突
-# 直接代理到本机 Tailscale IP（tailscale ip -4 查），而非 127.0.0.1
-tailscale serve --bg --https=8443 http://$(tailscale ip -4 | head -1):7681
+# 1. 查出本机 .ts.net 域名
+TS_DOMAIN=$(tailscale status --json | python3 -c "import sys,json;print(json.load(sys.stdin)['Self']['DNSName'].rstrip('.'))")
+echo "$TS_DOMAIN"   # 形如 jackymac-mini.tailxxxx.ts.net
 
-# 查看： tailscale serve status
-# 关闭： tailscale serve --https=8443 off
+# 2. 签发证书到 certs/（已被 .gitignore 忽略，不会提交）
+mkdir -p certs
+tailscale cert --cert-file certs/cert.crt --key-file certs/cert.key "$TS_DOMAIN"
+
+# 3. 带 HTTPS 端口启动
+HTTPS_PORT=8443 npm start
 ```
 
-随后手机浏览器打开 HTTPS 地址（形如）：
+启动日志会多出一行 `https : https://0.0.0.0:8443 (cert: ...)`。手机浏览器打开：
 
 ```
-https://<主机名>.<tailnet>.ts.net:8443
+https://<你的.ts.net域名>:8443
 ```
 
-打开后用浏览器菜单「添加到主屏幕 / 安装应用」，即可像原生 App 一样全屏启动。
+打开后用浏览器菜单「**添加到主屏幕 / 安装应用**」，即可像原生 App 一样全屏启动。
 
-> 为什么代理到 Tailscale IP 而非 `127.0.0.1`：服务默认监听 `0.0.0.0`，代理到真实网卡 IP 可避开本机其他占用 loopback 的进程。
+> **证书续期**：Tailscale 证书有效期约 90 天。重新运行第 2 步的 `tailscale cert` 即可刷新（可加 cron 每月跑一次）。
+>
+> **为什么不用 `tailscale serve`**：serve 代理 HTTPS 在部分环境下对自身 tailnet IP 存在自连/握手问题，本方案由 Node 直接持证书监听，链路更短也更易排查。
 
 ## 移动端手势
 
@@ -122,6 +132,9 @@ https://<主机名>.<tailnet>.ts.net:8443
 | `CLAUDE_CMD` | `claude --dangerously-skip-permissions` | 会话内启动命令 |
 | `TOKEN` | 空 | 非空时要求 URL 带 `?token=xxx` 才能访问 |
 | `UPLOAD_DIR` | `~/claude-web-uploads` | 图片上传落盘目录 |
+| `HTTPS_PORT` | 空 | 设为如 `8443` 时额外监听 HTTPS（PWA 用） |
+| `CERT_FILE` | `certs/cert.crt` | HTTPS 证书路径 |
+| `KEY_FILE` | `certs/cert.key` | HTTPS 私钥路径 |
 
 示例：
 
